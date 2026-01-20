@@ -50,4 +50,38 @@ export class AuthService {
       headers,
     });
   }
+
+  async requestPasswordReset(email: string, redirectTo?: string) {
+    return this.auth.api.requestPasswordReset({
+      body: {
+        email,
+        redirectTo,
+      },
+    });
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    return this.auth.api.resetPassword({
+      body: {
+        token,
+        newPassword,
+      },
+    });
+  }
+
+  async changePassword(
+    currentPassword: string,
+    newPassword: string,
+    headers: Record<string, string>,
+    revokeOtherSessions = true,
+  ) {
+    return this.auth.api.changePassword({
+      body: {
+        newPassword,
+        currentPassword,
+        revokeOtherSessions,
+      },
+      headers,
+    });
+  }
 }
