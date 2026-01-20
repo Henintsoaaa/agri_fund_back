@@ -86,8 +86,17 @@ export class AuthService {
   }
 
   async logout(headers: Record<string, string>) {
-    return this.auth.api.signOut({
-      headers,
-    });
+    try {
+      return await this.auth.api.signOut({
+        headers,
+      });
+    } catch (error) {
+      // Si la session n'existe pas (P2025), on retourne success quand même
+      // car l'utilisateur est déjà déconnecté
+      if (error.code === 'P2025') {
+        return { success: true };
+      }
+      throw error;
+    }
   }
 }
