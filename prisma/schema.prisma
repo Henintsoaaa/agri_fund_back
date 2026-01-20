@@ -23,14 +23,14 @@ enum Project_statut {
 
 model Project {
   id          String         @id @default(uuid())
-  owner_id    String
+  ownerId    String
   title       String
   description String
   statut      Project_statut
-  created_at  DateTime       @default(now())
-  updated_at  DateTime       @updatedAt
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
 
-  owner User @relation(fields: [owner_id], references: [id], onDelete: Cascade)
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 }
 
 enum Role {

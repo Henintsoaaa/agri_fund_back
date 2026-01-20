@@ -15,6 +15,10 @@ export const auth = betterAuth({
     provider: 'postgresql',
   }),
 
+  trustedOrigins: ['http://localhost:5173', process.env.CORS_ORIGIN].filter(
+    Boolean,
+  ) as string[],
+
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, url, token }, request) => {

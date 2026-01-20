@@ -54,4 +54,10 @@ export class AuthController {
       dto.revokeOtherSessions,
     );
   }
+
+  @Post('logout')
+  @AllowAnonymous()
+  logout(@Headers() headers: Record<string, string>) {
+    return this.authService.logout(headers);
+  }
 }

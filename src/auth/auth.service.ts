@@ -84,4 +84,10 @@ export class AuthService {
       headers,
     });
   }
+
+  async logout(headers: Record<string, string>) {
+    return this.auth.api.signOut({
+      headers,
+    });
+  }
 }
