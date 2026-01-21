@@ -60,4 +60,13 @@ export class AuthController {
   logout(@Headers() headers: Record<string, string>) {
     return this.authService.logout(headers);
   }
+
+  @Get('session')
+  @OptionalAuth()
+  getSession(
+    @Headers() headers: Record<string, string>,
+    @Session() session: UserSession | null,
+  ) {
+    return this.authService.getSession(headers);
+  }
 }

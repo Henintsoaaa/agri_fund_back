@@ -8,7 +8,7 @@ export class ProjectService {
   createProject() {
     return this.prisma.project.create({
       data: {
-        owner_id: '1',
+        ownerId: '1',
         title: 'New Project',
         description: 'This is a new project',
         statut: 'ACTIVE',

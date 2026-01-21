@@ -35,7 +35,7 @@ model Project {
 
 enum Role {
   PROJECT_OWNER
-  INVESTITOR
+  INVESTOR
   ADMIN
 }
 
@@ -46,7 +46,7 @@ model User {
   emailVerified Boolean   @default(false)
   image         String?
   phoneNumber   String?
-  role          Role      @default(INVESTITOR)
+  role          Role      @default(INVESTOR)
   country       String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

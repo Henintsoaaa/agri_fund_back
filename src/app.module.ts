@@ -6,9 +6,10 @@ import { auth } from './lib/auth';
 import { AuthController } from './auth/auth.controller';
 import { AuthModule } from './auth/auth.module';
 import { ProjectModule } from './project/project.module';
+import { UserModule } from './user/user.module';
 
 @Module({
-  imports: [BetterAuthModule.forRoot({ auth }), BetterAuthModule, AuthModule, ProjectModule],
+  imports: [BetterAuthModule.forRoot({ auth }), BetterAuthModule, AuthModule, ProjectModule, UserModule],
   controllers: [AppController],
   providers: [AppService],
 })

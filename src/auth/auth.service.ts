@@ -37,12 +37,21 @@ export class AuthService {
   async login(user: SigningDto) {
     const { email, password } = user;
 
-    return this.auth.api.signInEmail({
+    const response = await this.auth.api.signInEmail({
       body: {
         email,
         password,
       },
     });
+
+    const responseUser = await this.prisma.user.findUnique({
+      where: { id: response.user!.id },
+    });
+
+    return {
+      ...response,
+      user: responseUser,
+    };
   }
 
   async getSession(headers: Record<string, string>) {
