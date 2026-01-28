@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { AuthService as BetterAuthService } from '@thallesp/nestjs-better-auth';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import {
+  CreateUserDto,
+  CreateUserWithDefaultPassDto,
+} from './dto/create-user.dto';
 import { SigningDto } from './dto/signing-dto';
 
 @Injectable()
@@ -34,23 +37,45 @@ export class AuthService {
     return result;
   }
 
-  async login(user: SigningDto) {
+  async login(user: SigningDto, res: any) {
     const { email, password } = user;
 
-    const response = await this.auth.api.signInEmail({
+    // Appeler better-auth handler directement
+    const betterAuthResponse = await this.auth.api.signInEmail({
       body: {
         email,
         password,
       },
+      asResponse: true, // Demander la réponse HTTP complète
     });
 
+    // Extraire les cookies de la réponse better-auth
+    const setCookieHeader = betterAuthResponse.headers.get('set-cookie');
+    let sessionToken: string | null = null;
+
+    if (setCookieHeader) {
+      res.setHeader('Set-Cookie', setCookieHeader);
+
+      // Extraire le token signé complet du cookie
+      const tokenMatch = setCookieHeader.match(
+        /better-auth\.session_token=([^;]+)/,
+      );
+      if (tokenMatch) {
+        sessionToken = decodeURIComponent(tokenMatch[1]);
+      }
+    }
+
+    const responseData = await betterAuthResponse.json();
+
+    // Récupérer l'utilisateur complet depuis la base
     const responseUser = await this.prisma.user.findUnique({
-      where: { id: response.user!.id },
+      where: { id: responseData.user.id },
     });
 
     return {
-      ...response,
+      ...responseData,
       user: responseUser,
+      sessionToken, // Token complet signé (pour usage manuel si nécessaire)
     };
   }
 

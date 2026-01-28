@@ -26,3 +26,12 @@ export class CreateUserDto {
   @IsString()
   country?: string;
 }
+
+export class CreateUserWithDefaultPassDto {
+  @IsString()
+  @MinLength(3)
+  name: string;
+
+  @IsEmail()
+  email: string;
+}

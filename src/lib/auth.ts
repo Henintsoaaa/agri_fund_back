@@ -19,6 +19,18 @@ export const auth = betterAuth({
     Boolean,
   ) as string[],
 
+  cookies: {
+    sessionToken: {
+      name: 'better-auth.session_token', // NOM CLAIR ET STABLE (underscore pour correspondre au cookie)
+      options: {
+        httpOnly: true,
+        sameSite: 'lax', // IMPORTANT
+        secure: false, // true seulement en HTTPS
+        path: '/',
+      },
+    },
+  },
+
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, url, token }, request) => {

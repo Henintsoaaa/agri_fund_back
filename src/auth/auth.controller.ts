@@ -1,11 +1,19 @@
-import { Body, Controller, Post, Headers, Get, Param } from '@nestjs/common';
-import { auth } from '../lib/auth';
+import {
+  Body,
+  Controller,
+  Post,
+  Headers,
+  Get,
+  Param,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import {
-  Session,
-  UserSession,
   AllowAnonymous,
   OptionalAuth,
+  Session,
+  UserSession,
 } from '@thallesp/nestjs-better-auth';
 import { CreateUserDto } from './dto/create-user.dto';
 import { SigningDto } from './dto/signing-dto';
@@ -25,8 +33,8 @@ export class AuthController {
 
   @Post('login')
   @AllowAnonymous()
-  login(@Body() user: SigningDto) {
-    return this.authService.login(user);
+  async login(@Body() user: SigningDto, @Res({ passthrough: true }) res: any) {
+    return this.authService.login(user, res);
   }
 
   @Post('request-password-reset')
@@ -68,5 +76,13 @@ export class AuthController {
     @Session() session: UserSession | null,
   ) {
     return this.authService.getSession(headers);
+  }
+
+  @Get('auth-debug')
+  async debug(@Req() req: any) {
+    return {
+      headers: req.headers,
+      cookies: req.cookies,
+    };
   }
 }
