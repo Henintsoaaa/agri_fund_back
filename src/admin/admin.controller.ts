@@ -50,18 +50,18 @@ export class AdminController {
     return this.adminService.getAllUsers();
   }
 
-  @Get('active-users')
+  @Get('users/active')
   @UseGuards(BetterAuthGuard, RolesGuard)
   @Roles('ADMIN')
   getActiveUsers() {
     return this.adminService.getActiveUsers();
   }
 
-  @Get('non-active-users')
+  @Get('users/inactive')
   @UseGuards(BetterAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  getNonActiveUsers() {
-    return this.adminService.getNonActiveUsers();
+  getInactiveUsers() {
+    return this.adminService.getInactiveUsers();
   }
 
   @Get('user/:id')
@@ -71,7 +71,7 @@ export class AdminController {
     return this.adminService.getUserById(id);
   }
 
-  @Get('deleted-users')
+  @Get('users/deleted')
   @UseGuards(BetterAuthGuard, RolesGuard)
   @Roles('ADMIN')
   getDeletedUsers() {
@@ -85,6 +85,20 @@ export class AdminController {
     return this.adminService.getProjectOwners();
   }
 
+  @Get('project-owners/active')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  getActiveProjectOwners() {
+    return this.adminService.getActiveProjectOwners();
+  }
+
+  @Get('project-owners/inactive')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  getInactiveProjectOwners() {
+    return this.adminService.getInactiveProjectOwners();
+  }
+
   @Get('investors')
   @UseGuards(BetterAuthGuard, RolesGuard)
   @Roles('ADMIN')
@@ -92,30 +106,17 @@ export class AdminController {
     return this.adminService.getInvestors();
   }
 
-  @Get('active-project-owners')
-  @UseGuards(BetterAuthGuard, RolesGuard)
-  @Roles('ADMIN')
-  getActiveProjectOwners() {
-    return this.adminService.getActiveProjectOwners();
-  }
-  @Get('non-active-project-owners')
-  @UseGuards(BetterAuthGuard, RolesGuard)
-  @Roles('ADMIN')
-  getNonActiveProjectOwners() {
-    return this.adminService.getNonActiveProjectOwners();
-  }
-
-  @Get('active-investors')
+  @Get('investors/active')
   @UseGuards(BetterAuthGuard, RolesGuard)
   @Roles('ADMIN')
   getActiveInvestors() {
     return this.adminService.getActiveInvestors();
   }
 
-  @Get('non-active-investors')
+  @Get('investors/inactive')
   @UseGuards(BetterAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  getNonActiveInvestors() {
-    return this.adminService.getNonActiveInvestors();
+  getInactiveInvestors() {
+    return this.adminService.getInactiveInvestors();
   }
 }

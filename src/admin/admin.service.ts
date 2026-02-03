@@ -80,7 +80,7 @@ export class AdminService {
     return users;
   }
 
-  async getNonActiveUsers() {
+  async getInactiveUsers() {
     const users = await this.prisma.user.findMany({
       where: { isActive: false, isDeleted: false },
     });
@@ -122,7 +122,7 @@ export class AdminService {
     return users;
   }
 
-  async getNonActiveProjectOwners() {
+  async getInactiveProjectOwners() {
     const users = await this.prisma.user.findMany({
       where: { role: 'PROJECT_OWNER', isActive: false, isDeleted: false },
     });
@@ -136,7 +136,7 @@ export class AdminService {
     return users;
   }
 
-  async getNonActiveInvestors() {
+  async getInactiveInvestors() {
     const users = await this.prisma.user.findMany({
       where: { role: 'INVESTOR', isActive: false, isDeleted: false },
     });
