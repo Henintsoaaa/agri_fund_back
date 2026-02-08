@@ -6,87 +6,91 @@ import {
   Body,
   Get,
   Put,
+  Param,
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { BetterAuthGuard } from '../common/guards/better-auth.guard';
 import { Role } from '@/generated/prisma/enums';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
 
 @Controller('project')
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
 
-  @UseGuards(BetterAuthGuard)
-  @Roles('PROJECT_OWNER')
   @Post('create')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('PROJECT_OWNER')
   createProject(@Body() data: CreateProjectDto, @Req() req) {
     const userId = req.user.id;
 
     return this.projectService.createProject(data, userId);
   }
 
-  @UseGuards(BetterAuthGuard)
-  @Roles('PROJECT_OWNER')
   @Get('my-projects')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('PROJECT_OWNER')
   getMyProjects(@Req() req) {
     const userId = req.user.id;
 
     return this.projectService.getMyProjects(userId);
   }
 
-  @UseGuards(BetterAuthGuard)
-  @Roles('PROJECT_OWNER')
   @Get(':id')
-  getProjectById(@Req() req) {
-    const projectId = req.params.id;
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('PROJECT_OWNER')
+  getProjectById(@Param('id') id: string) {
+    const projectId = id;
 
     return this.projectService.getProjectById(projectId);
   }
 
-  @UseGuards(BetterAuthGuard)
+  @Put('update/:id')
+  @UseGuards(BetterAuthGuard, RolesGuard)
   @Roles('PROJECT_OWNER')
-  @Put(':id/update')
-  updateProject(@Req() req, @Body() data: CreateProjectDto) {
-    const projectId = req.params.id;
+  updateProject(
+    @Param('id') id: string,
+    @Body() data: CreateProjectDto,
+    @Req() req,
+  ) {
+    const projectId = id;
     const userId = req.user.id;
 
     return this.projectService.updateProject(projectId, data, userId);
   }
 
-  @UseGuards(BetterAuthGuard)
+  @Put('suspend/:id')
+  @UseGuards(BetterAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  @Put(':id/suspend')
-  suspendProject(@Req() req) {
-    const projectId = req.params.id;
+  suspendProject(@Param('id') id: string) {
+    const projectId = id;
 
     return this.projectService.suspendProject(projectId);
   }
 
-  @UseGuards(BetterAuthGuard)
+  @Put('activate/:id')
+  @UseGuards(BetterAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  @Put(':id/activate')
-  activateProject(@Req() req) {
-    const projectId = req.params.id;
+  activateProject(@Param('id') id: string) {
+    const projectId = id;
 
     return this.projectService.activateProject(projectId);
   }
 
-  @UseGuards(BetterAuthGuard)
+  @Put('delete/:id')
+  @UseGuards(BetterAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  @Put(':id/delete')
-  deleteProject(@Req() req) {
-    const projectId = req.params.id;
+  deleteProject(@Param('id') id: string) {
+    const projectId = id;
 
     return this.projectService.deleteProject(projectId);
   }
 
-  @UseGuards(BetterAuthGuard)
-  @Roles('ADMIN')
   @Get('')
-  getAllProjects(@Req() req) {
-    const projectId = req.params.id;
-
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  getAllProjects() {
     return this.projectService.getAllProjects();
   }
 }
