@@ -27,11 +27,19 @@ enum Role {
   ADMIN
 }
 
+enum Project_stage_statut {
+  OPEN
+  FUNDED
+  CLOSED
+}
+
 model Project {
   id          String         @id @default(uuid())
   ownerId    String
   title       String
   description String
+  image       String?
+  category    String?
   statut      Project_statut
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
@@ -47,10 +55,10 @@ model Project_stage{
   projectId   String
   title       String
   description String
-  tragetAmount Float
+  targetAmount Float
   collectedAmount Float @default(0)
   stageOrder Int
-  statut      Project_statut
+  statut      Project_stage_statut
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
 

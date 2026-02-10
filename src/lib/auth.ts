@@ -15,9 +15,11 @@ export const auth = betterAuth({
     provider: 'postgresql',
   }),
 
-  trustedOrigins: ['http://localhost:5173', process.env.CORS_ORIGIN].filter(
-    Boolean,
-  ) as string[],
+  trustedOrigins: [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    process.env.CORS_ORIGIN,
+  ].filter(Boolean) as string[],
 
   cookies: {
     sessionToken: {

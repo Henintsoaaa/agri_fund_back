@@ -6,10 +6,15 @@ import {
   Body,
   Get,
   Put,
+  Delete,
   Param,
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
+import {
+  UpdateProjectStageDto,
+  CreateIndividualStageDto,
+} from './dto/project-stage.dto';
 import { BetterAuthGuard } from '../common/guards/better-auth.guard';
 import { Role } from '@/generated/prisma/enums';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -92,5 +97,46 @@ export class ProjectController {
   @Roles('ADMIN')
   getAllProjects() {
     return this.projectService.getAllProjects();
+  }
+
+  // Stage-related endpoints
+  @Post(':projectId/stages')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('PROJECT_OWNER')
+  createProjectStage(
+    @Param('projectId') projectId: string,
+    @Body() data: CreateIndividualStageDto,
+    @Req() req,
+  ) {
+    const userId = req.user.id;
+    return this.projectService.createProjectStage(projectId, data, userId);
+  }
+
+  @Get('stages/:stageId')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('PROJECT_OWNER')
+  getProjectStageById(@Param('stageId') stageId: string, @Req() req) {
+    const userId = req.user.id;
+    return this.projectService.getProjectStageById(stageId, userId);
+  }
+
+  @Put('stages/:stageId')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('PROJECT_OWNER')
+  updateProjectStage(
+    @Param('stageId') stageId: string,
+    @Body() data: UpdateProjectStageDto,
+    @Req() req,
+  ) {
+    const userId = req.user.id;
+    return this.projectService.updateProjectStage(stageId, data, userId);
+  }
+
+  @Delete('stages/:stageId')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('PROJECT_OWNER')
+  deleteProjectStage(@Param('stageId') stageId: string, @Req() req) {
+    const userId = req.user.id;
+    return this.projectService.deleteProjectStage(stageId, userId);
   }
 }
