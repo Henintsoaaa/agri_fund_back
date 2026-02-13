@@ -93,4 +93,10 @@ export class ProjectController {
   getAllProjects() {
     return this.projectService.getAllProjects();
   }
+
+  @Get('public')
+  @UseGuards(BetterAuthGuard)
+  getPublicProjects() {
+    return this.projectService.getPublicProjects();
+  }
 }

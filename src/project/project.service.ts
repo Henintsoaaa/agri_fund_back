@@ -25,6 +25,13 @@ export class ProjectService {
         ownerId: userId,
         isDeleted: false,
       },
+      include: {
+        stages: {
+          orderBy: {
+            stageOrder: 'asc',
+          },
+        },
+      },
     });
 
     return projects;
@@ -35,6 +42,13 @@ export class ProjectService {
       where: {
         id: projectId,
         isDeleted: false,
+      },
+      include: {
+        stages: {
+          orderBy: {
+            stageOrder: 'asc',
+          },
+        },
       },
     });
 
@@ -108,6 +122,36 @@ export class ProjectService {
     const projects = await this.prisma.project.findMany({
       where: {
         isDeleted: false,
+      },
+      include: {
+        stages: {
+          orderBy: {
+            stageOrder: 'asc',
+          },
+        },
+      },
+    });
+
+    return projects;
+  }
+
+  async getPublicProjects() {
+    const projects = await this.prisma.project.findMany({
+      where: {
+        isDeleted: false,
+        statut: 'ACTIVE',
+      },
+      include: {
+        stages: {
+          where: {
+            statut: {
+              in: ['OPEN', 'FUNDED'],
+            },
+          },
+          orderBy: {
+            stageOrder: 'asc',
+          },
+        },
       },
     });
 
