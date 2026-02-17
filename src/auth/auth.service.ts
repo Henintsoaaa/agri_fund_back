@@ -80,9 +80,23 @@ export class AuthService {
   }
 
   async getSession(headers: Record<string, string>) {
-    return this.auth.api.getSession({
+    const session = await this.auth.api.getSession({
       headers,
     });
+
+    // Si une session existe, enrichir avec les données complètes de l'utilisateur
+    if (session?.user?.id) {
+      const fullUser = await this.prisma.user.findUnique({
+        where: { id: session.user.id },
+      });
+
+      return {
+        ...session,
+        user: fullUser,
+      };
+    }
+
+    return session;
   }
 
   async requestPasswordReset(email: string, redirectTo?: string) {
