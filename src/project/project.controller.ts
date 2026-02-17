@@ -11,13 +11,20 @@ import {
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { BetterAuthGuard } from '../common/guards/better-auth.guard';
-import { Role } from '@/generated/prisma/enums';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
+import {
+  DeleteProjectStageDto,
+  UpdateProjectStageDto,
+} from './dto/update-project-stage.dto';
+import { ProjectStageService } from './project-stage.service';
 
 @Controller('project')
 export class ProjectController {
-  constructor(private readonly projectService: ProjectService) {}
+  constructor(
+    private readonly projectService: ProjectService,
+    private readonly projectStageService: ProjectStageService,
+  ) {}
 
   @Post('create')
   @UseGuards(BetterAuthGuard, RolesGuard)
@@ -98,5 +105,43 @@ export class ProjectController {
   @UseGuards(BetterAuthGuard)
   getPublicProjects() {
     return this.projectService.getPublicProjects();
+  }
+
+  @Put('update-stage/:id')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('PROJECT_OWNER')
+  updateProjectStage(
+    @Param('id') id: string,
+    @Body() data: UpdateProjectStageDto,
+  ) {
+    const projectStageId = id;
+
+    return this.projectStageService.updateOneProjectStage(data, projectStageId);
+  }
+
+  @Put('delete-stage/:id')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('PROJECT_OWNER')
+  deleteProjectStage(
+    @Param('id') id: string,
+    @Body() data: DeleteProjectStageDto,
+  ) {
+    const projectStageId = id;
+
+    return this.projectStageService.deleteProjectStage(data, projectStageId);
+  }
+
+  @Get('stages/:projectId')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('PROJECT_OWNER')
+  getAllProjectStageOfProject(@Param('projectId') projectId: string) {
+    return this.projectStageService.getAllProjectStageOfProject(projectId);
+  }
+
+  @Get('stages-count/:projectId')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('PROJECT_OWNER')
+  countProjectStages(@Param('projectId') projectId: string) {
+    return this.projectStageService.countProjectStages(projectId);
   }
 }

@@ -1,22 +1,41 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
+import { ProjectStageService } from './project-stage.service';
+import { Project_stage_statut } from '@/generated/prisma/enums';
 
 @Injectable()
 export class ProjectService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly projectStageService: ProjectStageService,
+  ) {}
 
   async createProject(data: CreateProjectDto, userId: string) {
-    const result = await this.prisma.project.create({
+    // 1. Créer le projet
+    const project = await this.prisma.project.create({
       data: {
         title: data.title,
         description: data.description,
         statut: data.statut || 'DRAFT',
         ownerId: userId,
+        image: data.image,
       },
     });
 
-    return result;
+    // 2. Créer les stages si fournis
+    if (data.stages?.length) {
+      await this.projectStageService.createManyForProject(
+        data.stages,
+        project.id,
+      );
+    }
+
+    // 3. Retourner le projet avec ses stages
+    return this.prisma.project.findUnique({
+      where: { id: project.id },
+      include: { stages: { orderBy: { stageOrder: 'asc' } } },
+    });
   }
 
   async getMyProjects(userId: string) {
@@ -27,6 +46,9 @@ export class ProjectService {
       },
       include: {
         stages: {
+          where: {
+            isDeleted: false,
+          },
           orderBy: {
             stageOrder: 'asc',
           },
@@ -45,6 +67,9 @@ export class ProjectService {
       },
       include: {
         stages: {
+          where: {
+            isDeleted: false,
+          },
           orderBy: {
             stageOrder: 'asc',
           },
@@ -125,6 +150,9 @@ export class ProjectService {
       },
       include: {
         stages: {
+          where: {
+            isDeleted: false,
+          },
           orderBy: {
             stageOrder: 'asc',
           },
@@ -144,8 +172,9 @@ export class ProjectService {
       include: {
         stages: {
           where: {
+            isDeleted: false,
             statut: {
-              in: ['OPEN', 'FUNDED'],
+              in: ['OPEN' as Project_stage_statut, 'FUNDED'],
             },
           },
           orderBy: {
