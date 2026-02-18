@@ -46,4 +46,16 @@ export const auth = betterAuth({
       console.log(`Password for user ${user.email} has been reset.`);
     },
   },
+
+  // Add the role field as custom field on the user
+  user: {
+    additionalFields: {
+      role: {
+        type: 'string',
+        required: true,
+        defaultValue: 'INVESTOR',
+        input: true,
+      },
+    },
+  },
 });

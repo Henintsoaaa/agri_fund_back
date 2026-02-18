@@ -67,21 +67,29 @@ export class UserService {
 
   async getAllUsers() {
     const users = await this.prisma.user.findMany({
-      where: { isDeleted: false },
+      where: { isDeleted: false, role: { in: ['INVESTOR', 'PROJECT_OWNER'] } },
     });
     return users;
   }
 
   async getActiveUsers() {
     const users = await this.prisma.user.findMany({
-      where: { isActive: true, isDeleted: false },
+      where: {
+        isActive: true,
+        isDeleted: false,
+        role: { in: ['INVESTOR', 'PROJECT_OWNER'] },
+      },
     });
     return users;
   }
 
   async getInactiveUsers() {
     const users = await this.prisma.user.findMany({
-      where: { isActive: false, isDeleted: false },
+      where: {
+        isActive: false,
+        isDeleted: false,
+        role: { in: ['INVESTOR', 'PROJECT_OWNER'] },
+      },
     });
     return users;
   }

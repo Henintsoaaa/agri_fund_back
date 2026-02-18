@@ -47,12 +47,16 @@ export class BetterAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
 
+    console.log('BetterAuthGuard - Cookie:', request.headers.cookie);
+
     // Récupérer la session
     const session = await auth.api.getSession({
       headers: {
         cookie: request.headers.cookie,
       },
     });
+
+    console.log('BetterAuthGuard - Session:', session);
 
     if (!session?.user) {
       throw new UnauthorizedException('No valid session found');
@@ -62,6 +66,8 @@ export class BetterAuthGuard implements CanActivate {
     const fullUser = await this.prisma.user.findUnique({
       where: { id: session.user.id },
     });
+
+    console.log('BetterAuthGuard - FullUser:', fullUser);
 
     if (!fullUser) {
       throw new UnauthorizedException('User not found');

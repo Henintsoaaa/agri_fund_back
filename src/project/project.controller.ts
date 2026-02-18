@@ -43,6 +43,19 @@ export class ProjectController {
 
     return this.projectService.getMyProjects(userId);
   }
+  @Get('public')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('INVESTOR')
+  getPublicProjects() {
+    return this.projectService.getPublicProjects();
+  }
+
+  @Get()
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  getAllProjects() {
+    return this.projectService.getAllProjects();
+  }
 
   @Get(':id')
   @UseGuards(BetterAuthGuard, RolesGuard)
@@ -92,19 +105,6 @@ export class ProjectController {
     const projectId = id;
 
     return this.projectService.deleteProject(projectId);
-  }
-
-  @Get('')
-  @UseGuards(BetterAuthGuard, RolesGuard)
-  @Roles('ADMIN')
-  getAllProjects() {
-    return this.projectService.getAllProjects();
-  }
-
-  @Get('public')
-  @UseGuards(BetterAuthGuard)
-  getPublicProjects() {
-    return this.projectService.getPublicProjects();
   }
 
   @Put('update-stage/:id')
