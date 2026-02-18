@@ -35,6 +35,13 @@ export class ProjectController {
     return this.projectService.createProject(data, userId);
   }
 
+  @Get()
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  getAllProjects() {
+    return this.projectService.getAllProjects();
+  }
+
   @Get('my-projects')
   @UseGuards(BetterAuthGuard, RolesGuard)
   @Roles('PROJECT_OWNER')
@@ -48,13 +55,6 @@ export class ProjectController {
   @Roles('INVESTOR')
   getPublicProjects() {
     return this.projectService.getPublicProjects();
-  }
-
-  @Get()
-  @UseGuards(BetterAuthGuard, RolesGuard)
-  @Roles('ADMIN')
-  getAllProjects() {
-    return this.projectService.getAllProjects();
   }
 
   @Get(':id')
@@ -143,5 +143,12 @@ export class ProjectController {
   @Roles('PROJECT_OWNER')
   countProjectStages(@Param('projectId') projectId: string) {
     return this.projectStageService.countProjectStages(projectId);
+  }
+
+  @Get('investors/:projectId')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  getProjectInvestors(@Param('projectId') projectId: string) {
+    return this.projectService.getProjectInvestors(projectId);
   }
 }

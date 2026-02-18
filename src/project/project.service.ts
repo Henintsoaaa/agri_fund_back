@@ -187,4 +187,80 @@ export class ProjectService {
 
     return projects;
   }
+
+  async getProjectInvestors(projectId: string) {
+    // Récupérer tous les investissements pour ce projet
+    const investments = await this.prisma.investment.findMany({
+      where: {
+        projectStage: {
+          projectId: projectId,
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phoneNumber: true,
+            image: true,
+          },
+        },
+        projectStage: {
+          select: {
+            id: true,
+            title: true,
+            stageOrder: true,
+          },
+        },
+      },
+      orderBy: {
+        investmentDate: 'desc',
+      },
+    });
+
+    // Grouper les investissements par utilisateur
+    const investorMap = new Map();
+
+    investments.forEach((investment) => {
+      const userId = investment.user.id;
+
+      if (!investorMap.has(userId)) {
+        investorMap.set(userId, {
+          id: userId,
+          name: investment.user.name,
+          email: investment.user.email,
+          phone: investment.user.phoneNumber,
+          image: investment.user.image,
+          totalInvested: 0,
+          investments: [],
+        });
+      }
+
+      const investor = investorMap.get(userId);
+      investor.totalInvested += investment.amount;
+      investor.investments.push({
+        id: investment.id,
+        amount: investment.amount,
+        investmentDate: investment.investmentDate,
+        stage: investment.projectStage.title,
+        stageOrder: investment.projectStage.stageOrder,
+      });
+    });
+
+    // Convertir la map en tableau et trier par montant total investi
+    const investors = Array.from(investorMap.values()).sort(
+      (a, b) => b.totalInvested - a.totalInvested,
+    );
+
+    return {
+      projectId,
+      totalInvestors: investors.length,
+      totalInvested: investors.reduce(
+        (sum, investor) => sum + investor.totalInvested,
+        0,
+      ),
+      investors,
+    };
+  }
 }
