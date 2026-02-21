@@ -57,6 +57,15 @@ export class ProjectController {
     return this.projectService.getPublicProjects();
   }
 
+  @Get('public/:id')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('INVESTOR')
+  getPublicProjectById(@Param('id') id: string) {
+    const projectId = id;
+
+    return this.projectService.getProjectById(projectId);
+  }
+
   @Get(':id')
   @UseGuards(BetterAuthGuard, RolesGuard)
   @Roles('PROJECT_OWNER')
