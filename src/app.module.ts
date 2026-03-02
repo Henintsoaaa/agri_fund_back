@@ -8,6 +8,10 @@ import { AuthModule } from './auth/auth.module';
 import { ProjectModule } from './project/project.module';
 import { UserModule } from './user/user.module';
 import { AdminModule } from './admin/admin.module';
+import { InvestmentModule } from './investment/investment.module';
+import { TransactionModule } from './transaction/transaction.module';
+import { PaymentModule } from './payments/payment.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -17,6 +21,10 @@ import { AdminModule } from './admin/admin.module';
     ProjectModule,
     UserModule,
     AdminModule,
+    InvestmentModule,
+    TransactionModule,
+    PaymentModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

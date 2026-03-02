@@ -6,12 +6,14 @@ import {
   CreateUserWithDefaultPassDto,
 } from './dto/create-user.dto';
 import { SigningDto } from './dto/signing-dto';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly auth: BetterAuthService,
     private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async register(user: CreateUserDto) {
@@ -24,14 +26,19 @@ export class AuthService {
       },
     });
 
-    if (result.user?.id && (phoneNumber || country)) {
-      await this.prisma.user.update({
-        where: { id: result.user.id },
-        data: {
-          phoneNumber,
-          country,
-        },
-      });
+    if (result.user?.id) {
+      if (phoneNumber || country) {
+        await this.prisma.user.update({
+          where: { id: result.user.id },
+          data: {
+            phoneNumber,
+            country,
+          },
+        });
+      }
+
+      // Send welcome notification
+      await this.notificationService.notifyUserSignup(result.user.id, name);
     }
 
     return result;

@@ -3,12 +3,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { ProjectStageService } from './project-stage.service';
 import { Project_stage_statut } from '@/generated/prisma/enums';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class ProjectService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly projectStageService: ProjectStageService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async createProject(data: CreateProjectDto, userId: string) {
@@ -21,6 +23,11 @@ export class ProjectService {
         ownerId: userId,
         image: data.image,
       },
+      include: {
+        owner: {
+          select: { name: true },
+        },
+      },
     });
 
     // 2. Créer les stages si fournis
@@ -31,7 +38,15 @@ export class ProjectService {
       );
     }
 
-    // 3. Retourner le projet avec ses stages
+    // 3. Send notification
+    await this.notificationService.notifyProjectCreated(
+      project.id,
+      project.title,
+      userId,
+      project.owner.name,
+    );
+
+    // 4. Retourner le projet avec ses stages
     return this.prisma.project.findUnique({
       where: { id: project.id },
       include: { stages: { orderBy: { stageOrder: 'asc' } } },
@@ -98,6 +113,13 @@ export class ProjectService {
       },
     });
 
+    // Send notification
+    await this.notificationService.notifyProjectUpdated(
+      projectId,
+      updatedProject.title,
+      userId,
+    );
+
     return updatedProject;
   }
 
@@ -111,6 +133,13 @@ export class ProjectService {
         statut: 'SUSPENDED',
       },
     });
+
+    // Send notification
+    await this.notificationService.notifyProjectSuspended(
+      projectId,
+      result.title,
+      result.ownerId,
+    );
 
     return result;
   }
@@ -126,10 +155,22 @@ export class ProjectService {
       },
     });
 
+    // Send notification
+    await this.notificationService.notifyProjectActivated(
+      projectId,
+      result.title,
+      result.ownerId,
+    );
+
     return result;
   }
 
   async deleteProject(projectId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { title: true, ownerId: true },
+    });
+
     const result = await this.prisma.project.update({
       where: {
         id: projectId,
@@ -139,6 +180,15 @@ export class ProjectService {
         statut: 'SUSPENDED',
       },
     });
+
+    // Send notification
+    if (project) {
+      await this.notificationService.notifyProjectDeleted(
+        projectId,
+        project.title,
+        project.ownerId,
+      );
+    }
 
     return result;
   }
