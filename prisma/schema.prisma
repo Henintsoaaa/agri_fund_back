@@ -33,6 +33,25 @@ enum Project_stage_statut {
   CLOSED
 }
 
+enum InvestmentStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  CANCELLED
+}
+
+enum TransactionType {
+  PAYMENT
+  REFUND
+  DIVIDEND
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
 model Project {
   id          String         @id @default(uuid())
   ownerId    String
@@ -55,7 +74,7 @@ model Project_stage{
   title       String
   description String
   targetAmount Float
-  collectedAmount Float @default(0)
+  currentAmount Float @default(0)
   stageOrder Int
   statut      Project_stage_statut
   image       String
@@ -73,15 +92,38 @@ model Investment {
   projectStageId  String
   amount          Float
   investmentDate  DateTime       @default(now())
+  status       InvestmentStatus
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   projectStage Project_stage  @relation(fields: [projectStageId], references: [id], onDelete: Cascade)
 
+  transaction Transaction[]
+
   @@index([userId])
   @@index([projectStageId])
   @@map("investment")
+}
+
+model Transaction {
+  id                    String            @id @default(uuid())
+  investmentId          String
+  amount                Float
+  type                  TransactionType   @default(PAYMENT)
+  provider              String
+  providerTransactionId String?
+  transactionDate       DateTime          @default(now())
+  status                TransactionStatus @default(PENDING)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  investment Investment  @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+
+  @@index([investmentId])
+  @@index([type])
+  @@index([status])
+  @@map("transaction")
 }
 
 model User {
