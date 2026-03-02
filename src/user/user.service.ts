@@ -4,15 +4,20 @@ import { AuthService as BetterAuthService } from '@thallesp/nestjs-better-auth';
 import { CreateUserWithDefaultPassDto } from '../auth/dto/create-user.dto';
 import { EditUserDto } from './dto/edit-user.dto';
 import { DeleteUserDto } from './dto/delete-user.dto';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class UserService {
   constructor(
     private readonly auth: BetterAuthService,
     private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
   ) {}
 
-  async createUser(data: CreateUserWithDefaultPassDto) {
+  async createUser(
+    data: CreateUserWithDefaultPassDto,
+    adminName: string = 'Admin',
+  ) {
     const { name, email } = data;
 
     // Créer l'utilisateur avec better-auth
@@ -32,6 +37,13 @@ export class UserService {
           role: 'PROJECT_OWNER',
         },
       });
+
+      // Send notification
+      await this.notificationService.notifyUserCreatedByAdmin(
+        result.user.id,
+        name,
+        adminName,
+      );
     }
 
     return result;
@@ -39,6 +51,12 @@ export class UserService {
 
   async editUser(data: EditUserDto) {
     const { id, isActive } = data;
+
+    // Get user info before update
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { name: true },
+    });
 
     // Mettre à jour le statut isActive de l'utilisateur
     const updatedUser = await this.prisma.user.update({
@@ -48,11 +66,26 @@ export class UserService {
       },
     });
 
+    // Send notification
+    if (user) {
+      await this.notificationService.notifyUserStatusChange(
+        id,
+        user.name,
+        isActive,
+      );
+    }
+
     return updatedUser;
   }
 
   async deleteUser(data: DeleteUserDto) {
     const { id, isDeleted, isActive } = data;
+
+    // Get user info before delete
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { name: true },
+    });
 
     const deletedUser = await this.prisma.user.update({
       where: { id: id },
@@ -61,6 +94,11 @@ export class UserService {
         isActive: isActive,
       },
     });
+
+    // Send notification
+    if (user && isDeleted) {
+      await this.notificationService.notifyUserDeleted(id, user.name);
+    }
 
     return deletedUser;
   }

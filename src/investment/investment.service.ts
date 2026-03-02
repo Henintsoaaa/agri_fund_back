@@ -10,10 +10,14 @@ import {
   TransactionStatus,
   TransactionType,
 } from '@/generated/prisma/enums';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class InvestmentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   /**
    * Crée un investissement PENDING et la transaction correspondante PENDING.
@@ -67,8 +71,14 @@ export class InvestmentService {
             select: {
               id: true,
               title: true,
-              targetAmount: true,
-              currentAmount: true,
+              projectId: true,
+              project: {
+                select: {
+                  id: true,
+                  title: true,
+                  ownerId: true,
+                },
+              },
             },
           },
         },
@@ -84,6 +94,19 @@ export class InvestmentService {
           provider: investmentData.provider || 'STRIPE',
         },
       });
+
+      // Send notification
+      await this.notificationService.notifyInvestmentCreated(
+        investment.id,
+        investment.user.id,
+        investment.user.name,
+        amount,
+        investment.projectStage.id,
+        investment.projectStage.title,
+        investment.projectStage.project.id,
+        investment.projectStage.project.title,
+        investment.projectStage.project.ownerId,
+      );
 
       return investment;
     });
@@ -132,6 +155,14 @@ export class InvestmentService {
               title: true,
               targetAmount: true,
               currentAmount: true,
+              projectId: true,
+              project: {
+                select: {
+                  id: true,
+                  title: true,
+                  ownerId: true,
+                },
+              },
             },
           },
         },
@@ -170,7 +201,29 @@ export class InvestmentService {
             statut: 'FUNDED',
           },
         });
+
+        // Notify stage funded
+        await this.notificationService.notifyProjectStageFunded(
+          updatedInvestment.projectStage.id,
+          updatedInvestment.projectStage.project.id,
+          updatedInvestment.projectStage.title,
+          updatedInvestment.projectStage.project.title,
+          updatedInvestment.projectStage.project.ownerId,
+        );
       }
+
+      // Send investment confirmed notification
+      await this.notificationService.notifyInvestmentConfirmed(
+        updatedInvestment.id,
+        updatedInvestment.user.id,
+        updatedInvestment.user.name,
+        investment.amount,
+        updatedInvestment.projectStage.id,
+        updatedInvestment.projectStage.title,
+        updatedInvestment.projectStage.project.id,
+        updatedInvestment.projectStage.project.title,
+        updatedInvestment.projectStage.project.ownerId,
+      );
 
       return updatedInvestment;
     });
@@ -227,6 +280,14 @@ export class InvestmentService {
             select: {
               id: true,
               title: true,
+              projectId: true,
+              project: {
+                select: {
+                  id: true,
+                  title: true,
+                  ownerId: true,
+                },
+              },
             },
           },
         },
@@ -239,6 +300,19 @@ export class InvestmentService {
           status: TransactionStatus.FAILED,
         },
       });
+
+      // Send notification
+      await this.notificationService.notifyInvestmentCancelled(
+        updatedInvestment.id,
+        updatedInvestment.user.id,
+        updatedInvestment.user.name,
+        investment.amount,
+        updatedInvestment.projectStage.id,
+        updatedInvestment.projectStage.title,
+        updatedInvestment.projectStage.project.id,
+        updatedInvestment.projectStage.project.title,
+        updatedInvestment.projectStage.project.ownerId,
+      );
 
       return updatedInvestment;
     });
@@ -468,6 +542,13 @@ export class InvestmentService {
             select: {
               id: true,
               title: true,
+              projectId: true,
+              project: {
+                select: {
+                  id: true,
+                  title: true,
+                },
+              },
             },
           },
         },
@@ -478,6 +559,19 @@ export class InvestmentService {
         where: { investmentId, type: TransactionType.PAYMENT },
         data: { status: TransactionStatus.FAILED },
       });
+
+      // Send notification for failed investment
+      if (status === 'FAILED') {
+        await this.notificationService.notifyInvestmentFailed(
+          updatedInvestment.id,
+          updatedInvestment.user.id,
+          investment.amount,
+          updatedInvestment.projectStage.id,
+          updatedInvestment.projectStage.title,
+          updatedInvestment.projectStage.project.id,
+          updatedInvestment.projectStage.project.title,
+        );
+      }
 
       return updatedInvestment;
     });

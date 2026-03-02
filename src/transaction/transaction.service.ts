@@ -6,10 +6,14 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTransactionDto } from './dto/CreateTransaction.dto';
 import { TransactionStatus, TransactionType } from '@/generated/prisma/enums';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class TransactionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   /**
    * Crée une transaction (type PAYMENT, REFUND, DIVIDEND) avec status PENDING.
@@ -72,7 +76,12 @@ export class TransactionService {
       include: {
         investment: {
           include: {
-            projectStage: true,
+            projectStage: {
+              include: {
+                project: true,
+              },
+            },
+            user: true,
           },
         },
       },
@@ -108,6 +117,12 @@ export class TransactionService {
                   select: {
                     id: true,
                     title: true,
+                    project: {
+                      select: {
+                        id: true,
+                        title: true,
+                      },
+                    },
                   },
                 },
               },
@@ -148,12 +163,20 @@ export class TransactionService {
           }
         }
 
+        // Send payment success notification
+        await this.notificationService.notifyPaymentSuccess(
+          updatedTransaction.investment.id,
+          updatedTransaction.investment.user.id,
+          updatedTransaction.amount,
+          updatedTransaction.investment.projectStage.project.title,
+        );
+
         return updatedTransaction;
       });
     }
 
     // Pour les autres cas, simple mise à jour
-    return await this.prisma.transaction.update({
+    const updatedTransaction = await this.prisma.transaction.update({
       where: { id: transactionId },
       data: { status },
       include: {
@@ -170,12 +193,63 @@ export class TransactionService {
               select: {
                 id: true,
                 title: true,
+                project: {
+                  select: {
+                    id: true,
+                    title: true,
+                    ownerId: true,
+                  },
+                },
               },
             },
           },
         },
       },
     });
+
+    // Send notification for failed payment
+    if (
+      status === TransactionStatus.FAILED &&
+      transaction.type === TransactionType.PAYMENT
+    ) {
+      await this.notificationService.notifyPaymentFailed(
+        updatedTransaction.investment.id,
+        updatedTransaction.investment.user.id,
+        updatedTransaction.amount,
+        updatedTransaction.investment.projectStage.project.title,
+      );
+    }
+
+    // Send notification for successful refund
+    if (
+      status === TransactionStatus.SUCCESS &&
+      transaction.type === TransactionType.REFUND
+    ) {
+      await this.notificationService.notifyRefundProcessed(
+        updatedTransaction.investment.id,
+        updatedTransaction.investment.user.id,
+        updatedTransaction.investment.user.name,
+        updatedTransaction.amount,
+        updatedTransaction.investment.projectStage.project.title,
+        updatedTransaction.investment.projectStage.project.id,
+        updatedTransaction.investment.projectStage.project.ownerId,
+      );
+    }
+
+    // Send notification for successful dividend
+    if (
+      status === TransactionStatus.SUCCESS &&
+      transaction.type === TransactionType.DIVIDEND
+    ) {
+      await this.notificationService.notifyDividendPaid(
+        updatedTransaction.investment.user.id,
+        updatedTransaction.amount,
+        updatedTransaction.investment.projectStage.project.title,
+        updatedTransaction.investment.projectStage.project.id,
+      );
+    }
+
+    return updatedTransaction;
   }
 
   /**
@@ -295,34 +369,47 @@ export class TransactionService {
       );
     }
 
-    return await this.prisma.transaction.create({
-      data: {
-        investmentId,
-        amount,
-        type: TransactionType.REFUND,
-        provider: provider || paymentTransaction.provider,
-        status: TransactionStatus.PENDING,
-      },
-      include: {
-        investment: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
+    return await this.prisma.transaction
+      .create({
+        data: {
+          investmentId,
+          amount,
+          type: TransactionType.REFUND,
+          provider: provider || paymentTransaction.provider,
+          status: TransactionStatus.PENDING,
+        },
+        include: {
+          investment: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
               },
-            },
-            projectStage: {
-              select: {
-                id: true,
-                title: true,
+              projectStage: {
+                select: {
+                  id: true,
+                  title: true,
+                  projectId: true,
+                  project: {
+                    select: {
+                      id: true,
+                      title: true,
+                      ownerId: true,
+                    },
+                  },
+                },
               },
             },
           },
         },
-      },
-    });
+      })
+      .then(async (transaction) => {
+        // Note: Notification sent when refund status becomes SUCCESS
+        return transaction;
+      });
   }
 
   /**

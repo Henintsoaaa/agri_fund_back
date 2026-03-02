@@ -6,6 +6,7 @@ import {
   Put,
   Param,
   Get,
+  Req,
 } from '@nestjs/common';
 
 import { BetterAuthGuard } from '../common/guards/better-auth.guard';
@@ -23,8 +24,9 @@ export class UserController {
   @Post('create-user')
   @UseGuards(BetterAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  createUser(@Body() user: CreateUserWithDefaultPassDto) {
-    return this.userService.createUser(user);
+  createUser(@Body() user: CreateUserWithDefaultPassDto, @Req() req: any) {
+    const adminName = req.user?.name || 'Admin';
+    return this.userService.createUser(user, adminName);
   }
 
   @Put('edit-user/:id')

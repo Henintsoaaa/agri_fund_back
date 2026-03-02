@@ -11,6 +11,7 @@ import { AdminModule } from './admin/admin.module';
 import { InvestmentModule } from './investment/investment.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { PaymentModule } from './payments/payment.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { PaymentModule } from './payments/payment.module';
     InvestmentModule,
     TransactionModule,
     PaymentModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
