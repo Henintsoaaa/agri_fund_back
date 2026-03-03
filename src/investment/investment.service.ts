@@ -106,6 +106,7 @@ export class InvestmentService {
         investment.projectStage.project.id,
         investment.projectStage.project.title,
         investment.projectStage.project.ownerId,
+        tx,
       );
 
       return investment;

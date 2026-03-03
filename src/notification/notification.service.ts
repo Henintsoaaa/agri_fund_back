@@ -28,8 +28,9 @@ export class NotificationService {
   /**
    * Create a notification for a specific user
    */
-  private async notify(data: NotificationData) {
-    return this.prismaService.notification.create({
+  private async notify(data: NotificationData, tx?: any) {
+    const prisma = tx || this.prismaService;
+    return prisma.notification.create({
       data: {
         userId: data.userId,
         type: data.type,
@@ -357,39 +358,53 @@ export class NotificationService {
     projectId: string,
     projectTitle: string,
     ownerId: string,
+    tx?: any,
   ) {
-    const admins = await this.getAdmins();
+    const prisma = tx || this.prismaService;
+    const admins = await prisma.user.findMany({
+      where: { role: 'ADMIN', isActive: true, isDeleted: false },
+      select: { id: true },
+    });
 
     // Notify investor
-    await this.notify({
-      userId: investorId,
-      type: 'INVESTMENT_CREATED',
-      content: `Votre investissement de ${amount}€ pour l'étape "${stageTitle}" du projet "${projectTitle}" est en attente de paiement.`,
-      projectId,
-      projectStageId,
-      investmentId,
-    });
-
-    // Notify project owner
-    await this.notify({
-      userId: ownerId,
-      type: 'INVESTMENT_CREATED',
-      content: `${investorName} a initié un investissement de ${amount}€ pour l'étape "${stageTitle}" (en attente de paiement).`,
-      projectId,
-      projectStageId,
-      investmentId,
-    });
-
-    // Notify admins
-    for (const admin of admins) {
-      await this.notify({
-        userId: admin.id,
+    await this.notify(
+      {
+        userId: investorId,
         type: 'INVESTMENT_CREATED',
-        content: `Nouvel investissement en attente: ${investorName} - ${amount}€ pour "${projectTitle}".`,
+        content: `Votre investissement de ${amount}MGA pour l'étape "${stageTitle}" du projet "${projectTitle}" est en attente de paiement.`,
         projectId,
         projectStageId,
         investmentId,
-      });
+      },
+      tx,
+    );
+
+    // Notify project owner
+    await this.notify(
+      {
+        userId: ownerId,
+        type: 'INVESTMENT_CREATED',
+        content: `${investorName} a initié un investissement de ${amount}MGA pour l'étape "${stageTitle}" (en attente de paiement).`,
+        projectId,
+        projectStageId,
+        investmentId,
+      },
+      tx,
+    );
+
+    // Notify admins
+    for (const admin of admins) {
+      await this.notify(
+        {
+          userId: admin.id,
+          type: 'INVESTMENT_CREATED',
+          content: `Nouvel investissement en attente: ${investorName} - ${amount}MGA pour "${projectTitle}".`,
+          projectId,
+          projectStageId,
+          investmentId,
+        },
+        tx,
+      );
     }
   }
 
@@ -410,7 +425,7 @@ export class NotificationService {
     await this.notify({
       userId: investorId,
       type: 'INVESTMENT_CONFIRMED',
-      content: `✅ Votre investissement de ${amount}€ pour l'étape "${stageTitle}" du projet "${projectTitle}" a été confirmé !`,
+      content: `✅ Votre investissement de ${amount}MGA pour l'étape "${stageTitle}" du projet "${projectTitle}" a été confirmé !`,
       projectId,
       projectStageId,
       investmentId,
@@ -420,7 +435,7 @@ export class NotificationService {
     await this.notify({
       userId: ownerId,
       type: 'INVESTMENT_CONFIRMED',
-      content: `✅ ${investorName} a investi ${amount}€ dans l'étape "${stageTitle}" !`,
+      content: `✅ ${investorName} a investi ${amount}MGA dans l'étape "${stageTitle}" !`,
       projectId,
       projectStageId,
       investmentId,
@@ -431,7 +446,7 @@ export class NotificationService {
       await this.notify({
         userId: admin.id,
         type: 'INVESTMENT_CONFIRMED',
-        content: `Investissement confirmé: ${investorName} - ${amount}€ pour "${projectTitle}".`,
+        content: `Investissement confirmé: ${investorName} - ${amount}MGA pour "${projectTitle}".`,
         projectId,
         projectStageId,
         investmentId,
@@ -456,7 +471,7 @@ export class NotificationService {
     await this.notify({
       userId: investorId,
       type: 'INVESTMENT_CANCELLED',
-      content: `Votre investissement de ${amount}€ pour l'étape "${stageTitle}" du projet "${projectTitle}" a été annulé.`,
+      content: `Votre investissement de ${amount}MGA pour l'étape "${stageTitle}" du projet "${projectTitle}" a été annulé.`,
       projectId,
       projectStageId,
       investmentId,
@@ -466,7 +481,7 @@ export class NotificationService {
     await this.notify({
       userId: ownerId,
       type: 'INVESTMENT_CANCELLED',
-      content: `L'investissement de ${investorName} (${amount}€) pour l'étape "${stageTitle}" a été annulé.`,
+      content: `L'investissement de ${investorName} (${amount}MGA) pour l'étape "${stageTitle}" a été annulé.`,
       projectId,
       projectStageId,
       investmentId,
@@ -477,7 +492,7 @@ export class NotificationService {
       await this.notify({
         userId: admin.id,
         type: 'INVESTMENT_CANCELLED',
-        content: `Investissement annulé: ${investorName} - ${amount}€ pour "${projectTitle}".`,
+        content: `Investissement annulé: ${investorName} - ${amount}MGA pour "${projectTitle}".`,
         projectId,
         projectStageId,
         investmentId,
@@ -498,7 +513,7 @@ export class NotificationService {
     await this.notify({
       userId: investorId,
       type: 'INVESTMENT_FAILED',
-      content: `❌ Le paiement de ${amount}€ pour l'étape "${stageTitle}" du projet "${projectTitle}" a échoué. Veuillez réessayer.`,
+      content: `❌ Le paiement de ${amount}MGA pour l'étape "${stageTitle}" du projet "${projectTitle}" a échoué. Veuillez réessayer.`,
       projectId,
       projectStageId,
       investmentId,
@@ -517,7 +532,7 @@ export class NotificationService {
     await this.notify({
       userId: investorId,
       type: 'PAYMENT_PENDING',
-      content: `Votre paiement de ${amount}€ pour "${projectTitle}" est en cours de traitement.`,
+      content: `Votre paiement de ${amount}MGA pour "${projectTitle}" est en cours de traitement.`,
       investmentId,
     });
   }
@@ -532,7 +547,7 @@ export class NotificationService {
     await this.notify({
       userId: investorId,
       type: 'PAYMENT_SUCCESS',
-      content: `✅ Votre paiement de ${amount}€ pour "${projectTitle}" a été validé avec succès !`,
+      content: `✅ Votre paiement de ${amount}MGA pour "${projectTitle}" a été validé avec succès !`,
       investmentId,
     });
   }
@@ -547,7 +562,7 @@ export class NotificationService {
     await this.notify({
       userId: investorId,
       type: 'PAYMENT_FAILED',
-      content: `❌ Votre paiement de ${amount}€ pour "${projectTitle}" a échoué. Veuillez réessayer.`,
+      content: `❌ Votre paiement de ${amount}MGA pour "${projectTitle}" a échoué. Veuillez réessayer.`,
       investmentId,
     });
   }
@@ -567,7 +582,7 @@ export class NotificationService {
     await this.notify({
       userId: investorId,
       type: 'REFUND_PROCESSED',
-      content: `Un remboursement de ${amount}€ pour "${projectTitle}" a été traité.`,
+      content: `Un remboursement de ${amount}MGA pour "${projectTitle}" a été traité.`,
       investmentId,
       projectId,
     });
@@ -576,7 +591,7 @@ export class NotificationService {
     await this.notify({
       userId: ownerId,
       type: 'REFUND_PROCESSED',
-      content: `Un remboursement de ${amount}€ a été effectué pour ${investorName}.`,
+      content: `Un remboursement de ${amount}MGA a été effectué pour ${investorName}.`,
       investmentId,
       projectId,
     });
@@ -586,7 +601,7 @@ export class NotificationService {
       await this.notify({
         userId: admin.id,
         type: 'REFUND_PROCESSED',
-        content: `Remboursement traité: ${amount}€ pour ${investorName} - "${projectTitle}".`,
+        content: `Remboursement traité: ${amount}MGA pour ${investorName} - "${projectTitle}".`,
         investmentId,
         projectId,
       });
@@ -603,7 +618,7 @@ export class NotificationService {
     await this.notify({
       userId: investorId,
       type: 'DIVIDEND_PAID',
-      content: `💰 Vous avez reçu un dividende de ${amount}€ du projet "${projectTitle}" !`,
+      content: `💰 Vous avez reçu un dividende de ${amount}MGA du projet "${projectTitle}" !`,
       projectId,
     });
   }
