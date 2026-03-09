@@ -12,6 +12,12 @@ import { InvestmentModule } from './investment/investment.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { PaymentModule } from './payments/payment.module';
 import { NotificationModule } from './notification/notification.module';
+import { FavoritesModule } from './favorites/favorites.module';
+import { HistoryModule } from './history/history.module';
+import { StatsModule } from './stats/stats.module';
+import { ProofsModule } from './proofs/proofs.module';
+import { ReportsModule } from './reports/reports.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -25,6 +31,12 @@ import { NotificationModule } from './notification/notification.module';
     TransactionModule,
     PaymentModule,
     NotificationModule,
+    FavoritesModule,
+    HistoryModule,
+    StatsModule,
+    ProofsModule,
+    ReportsModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
