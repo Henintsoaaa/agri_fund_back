@@ -1,21 +1,12 @@
 import {
   Controller,
-  Post,
   Get,
-  Patch,
-  Body,
   Param,
-  Query,
   UseGuards,
   Req,
   ForbiddenException,
 } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
-import {
-  CreateTransactionDto,
-  UpdateTransactionStatusDto,
-} from './dto/CreateTransaction.dto';
-import { TransactionStatus } from '@/generated/prisma/enums';
 import { BetterAuthGuard } from '../common/guards/better-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -23,36 +14,6 @@ import { Roles } from '../common/decorators/roles.decorator';
 @Controller('transaction')
 export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}
-
-  /**
-   * POST /transaction
-   * Crée une transaction (PAYMENT, REFUND, DIVIDEND)
-   */
-  @Post()
-  @UseGuards(BetterAuthGuard, RolesGuard)
-  @Roles('ADMIN')
-  async createTransaction(@Body() createTransactionDto: CreateTransactionDto) {
-    return await this.transactionService.createTransaction(
-      createTransactionDto,
-    );
-  }
-
-  /**
-   * PATCH /transaction/:id/status
-   * Met à jour le status d'une transaction (SUCCESS, FAILED)
-   */
-  @Patch(':id/status')
-  @UseGuards(BetterAuthGuard, RolesGuard)
-  @Roles('ADMIN')
-  async updateTransactionStatus(
-    @Param('id') transactionId: string,
-    @Body() body: UpdateTransactionStatusDto,
-  ) {
-    return await this.transactionService.updateTransactionStatus(
-      transactionId,
-      body.status,
-    );
-  }
 
   /**
    * GET /transaction/investment/:investmentId
@@ -85,28 +46,6 @@ export class TransactionController {
       );
     }
     return await this.transactionService.getUserTransactions(userId);
-  }
-
-  /**
-   * POST /transaction/refund
-   * Crée une transaction REFUND
-   */
-  @Post('refund')
-  @UseGuards(BetterAuthGuard, RolesGuard)
-  @Roles('ADMIN')
-  async createRefundTransaction(
-    @Body()
-    body: {
-      investmentId: string;
-      amount: number;
-      provider?: string;
-    },
-  ) {
-    return await this.transactionService.createRefundTransaction(
-      body.investmentId,
-      body.amount,
-      body.provider,
-    );
   }
 
   /**
