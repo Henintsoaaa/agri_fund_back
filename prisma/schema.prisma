@@ -94,6 +94,7 @@ model Project_stage{
 
   investments Investment[]
   notifications Notification[]
+  proofs Proof[]
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade) 
 }
 
@@ -253,20 +254,24 @@ model Favorite {
 }
 
 model Proof {
-  id          String      @id @default(uuid())
-  projectId   String
-  title       String
-  description String?
-  imageUrl    String
-  status      ProofStatus @default(PENDING)
-  uploadedAt  DateTime    @default(now())
-  approvedAt  DateTime?
-  approvedBy  String?
+  id              String      @id @default(uuid())
+  projectId       String
+  projectStageId  String?
+  title           String
+  description     String?
+  fileUrl         String
+  fileType        String      @default("image")
+  status          ProofStatus @default(PENDING)
+  uploadedAt      DateTime    @default(now())
+  approvedAt      DateTime?
+  approvedBy      String?
   
-  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  approver User?   @relation(fields: [approvedBy], references: [id])
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectStage Project_stage? @relation(fields: [projectStageId], references: [id], onDelete: Cascade)
+  approver     User?          @relation(fields: [approvedBy], references: [id])
   
   @@index([projectId])
+  @@index([projectStageId])
   @@index([status])
   @@map("proofs")
 }

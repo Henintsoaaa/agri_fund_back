@@ -2,85 +2,163 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Delete,
   Body,
+  Param,
   UseGuards,
   Req,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { PrismaService } from '../prisma/prisma.service';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import { ProofsService } from './proofs.service';
 import { BetterAuthGuard } from '../common/guards/better-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 
 @Controller('proofs')
 export class ProofsController {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly proofsService: ProofsService) {}
 
-  @Get()
-  @UseGuards(BetterAuthGuard)
-  async getProofs(@Req() req: any) {
-    const userId = req.user.id;
-
-    // Get projects owned by this user
-    const projects = await this.prismaService.project.findMany({
-      where: {
-        ownerId: userId,
-        isDeleted: false,
-      },
-      include: {
-        stages: true,
-      },
-    });
-
-    // Return mock proofs for now - in production, store in database
-    return projects.map((project) => ({
-      id: Math.random().toString(36).substr(2, 9),
-      projectId: project.id,
-      projectName: project.title,
-      title: 'Construction Progress - Week 1',
-      description: 'Foundation completed',
-      imageUrl: '/placeholder.jpg',
-      status: 'PENDING',
-      uploadedAt: new Date(),
-    }));
-  }
-
+  /**
+   * POST /proofs/upload
+   * Upload a proof file (project owner only)
+   */
   @Post('upload')
-  @UseGuards(BetterAuthGuard)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('PROJECT_OWNER')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads/proofs',
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          cb(null, `proof-${uniqueSuffix}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|pdf|doc|docx/;
+        const mimeType = allowedTypes.test(file.mimetype);
+        const extName = allowedTypes.test(
+          extname(file.originalname).toLowerCase(),
+        );
+
+        if (mimeType && extName) {
+          return cb(null, true);
+        }
+        cb(new BadRequestException('Only images and documents are allowed'));
+      },
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB
+      },
+    }),
+  )
   async uploadProof(
-    @UploadedFile() file: any,
+    @UploadedFile() file: Express.Multer.File,
     @Body() body: any,
     @Req() req: any,
   ) {
-    const userId = req.user.id;
-    const { projectId, title, description } = body;
-
-    // Verify user owns the project
-    const project = await this.prismaService.project.findFirst({
-      where: {
-        id: projectId,
-        ownerId: userId,
-        isDeleted: false,
-      },
-    });
-
-    if (!project) {
-      throw new Error('Project not found or unauthorized');
+    if (!file) {
+      throw new BadRequestException('File is required');
     }
 
-    // In production, save file to storage and create proof record in database
-    return {
-      message: 'Proof uploaded successfully',
-      proof: {
-        id: Math.random().toString(36).substr(2, 9),
-        projectId,
-        title,
-        description,
-        imageUrl: file ? `/uploads/${file.filename}` : '/placeholder.jpg',
-        status: 'PENDING',
-        uploadedAt: new Date(),
-      },
-    };
+    const { projectId, projectStageId, title, description } = body;
+
+    if (!projectId || !title) {
+      throw new BadRequestException('ProjectId and title are required');
+    }
+
+    const fileType = file.mimetype.startsWith('image/') ? 'image' : 'document';
+    const fileUrl = `/uploads/proofs/${file.filename}`;
+
+    return await this.proofsService.createProof({
+      projectId,
+      projectStageId: projectStageId || null,
+      title,
+      description: description || null,
+      fileUrl,
+      fileType,
+      uploadedBy: req.user.id,
+    });
+  }
+
+  /**
+   * GET /proofs/my-proofs
+   * Get all proofs uploaded by the current project owner
+   */
+  @Get('my-proofs')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('PROJECT_OWNER')
+  async getMyProofs(@Req() req: any) {
+    return await this.proofsService.getMyProofs(req.user.id);
+  }
+
+  /**
+   * GET /proofs/stage/:stageId
+   * Get approved proofs for a funded stage (accessible by all users)
+   */
+  @Get('stage/:stageId')
+  @UseGuards(BetterAuthGuard)
+  async getStageProofs(@Param('stageId') stageId: string) {
+    return await this.proofsService.getStageProofs(stageId);
+  }
+
+  /**
+   * GET /proofs/project/:projectId
+   * Get all approved proofs for a project (accessible by all users)
+   */
+  @Get('project/:projectId')
+  @UseGuards(BetterAuthGuard)
+  async getProjectProofs(@Param('projectId') projectId: string) {
+    return await this.proofsService.getProjectProofs(projectId);
+  }
+
+  /**
+   * GET /proofs/pending
+   * Get all pending proofs (admin only)
+   */
+  @Get('pending')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async getPendingProofs() {
+    return await this.proofsService.getPendingProofs();
+  }
+
+  /**
+   * PATCH /proofs/:id/approve
+   * Approve a proof (admin only)
+   */
+  @Patch(':id/approve')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async approveProof(@Param('id') id: string, @Req() req: any) {
+    return await this.proofsService.approveProof(id, req.user.id);
+  }
+
+  /**
+   * PATCH /proofs/:id/reject
+   * Reject a proof (admin only)
+   */
+  @Patch(':id/reject')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async rejectProof(@Param('id') id: string, @Req() req: any) {
+    return await this.proofsService.rejectProof(id, req.user.id);
+  }
+
+  /**
+   * DELETE /proofs/:id
+   * Delete a proof (owner only, before approval)
+   */
+  @Delete(':id')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('PROJECT_OWNER')
+  async deleteProof(@Param('id') id: string, @Req() req: any) {
+    return await this.proofsService.deleteProof(id, req.user.id);
   }
 }
