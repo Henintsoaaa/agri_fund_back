@@ -13,16 +13,18 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { ProofsService } from './proofs.service';
+import { UploadService } from '../upload/upload.service';
 import { BetterAuthGuard } from '../common/guards/better-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 
 @Controller('proofs')
 export class ProofsController {
-  constructor(private readonly proofsService: ProofsService) {}
+  constructor(
+    private readonly proofsService: ProofsService,
+    private readonly uploadService: UploadService,
+  ) {}
 
   /**
    * POST /proofs/upload
@@ -31,35 +33,9 @@ export class ProofsController {
   @Post('upload')
   @UseGuards(BetterAuthGuard, RolesGuard)
   @Roles('PROJECT_OWNER')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './uploads/proofs',
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, `proof-${uniqueSuffix}${extname(file.originalname)}`);
-        },
-      }),
-      fileFilter: (req, file, cb) => {
-        const allowedTypes = /jpeg|jpg|png|pdf|doc|docx/;
-        const mimeType = allowedTypes.test(file.mimetype);
-        const extName = allowedTypes.test(
-          extname(file.originalname).toLowerCase(),
-        );
-
-        if (mimeType && extName) {
-          return cb(null, true);
-        }
-        cb(new BadRequestException('Only images and documents are allowed'));
-      },
-      limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB
-      },
-    }),
-  )
+  @UseInterceptors(FileInterceptor('file'))
   async uploadProof(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
     @Body() body: any,
     @Req() req: any,
   ) {
@@ -73,15 +49,17 @@ export class ProofsController {
       throw new BadRequestException('ProjectId and title are required');
     }
 
+    // Upload file using upload service
+    const uploadResult = await this.uploadService.uploadProofFile(file);
+
     const fileType = file.mimetype.startsWith('image/') ? 'image' : 'document';
-    const fileUrl = `/uploads/proofs/${file.filename}`;
 
     return await this.proofsService.createProof({
       projectId,
       projectStageId: projectStageId || null,
       title,
       description: description || null,
-      fileUrl,
+      fileUrl: uploadResult.path,
       fileType,
       uploadedBy: req.user.id,
     });
