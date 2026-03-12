@@ -68,7 +68,7 @@ export class ProjectController {
 
   @Get(':id')
   @UseGuards(BetterAuthGuard, RolesGuard)
-  @Roles('PROJECT_OWNER')
+  @Roles('PROJECT_OWNER', 'ADMIN')
   getProjectById(@Param('id') id: string) {
     const projectId = id;
 
