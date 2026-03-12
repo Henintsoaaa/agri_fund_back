@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateProjectDto } from './dto/create-project.dto';
+import { CreateProjectDto, UpdateProjectDto } from './dto/create-project.dto';
 import { ProjectStageService } from './project-stage.service';
 import { Project_stage_statut } from '@/generated/prisma/enums';
 import { NotificationService } from '../notification/notification.service';
@@ -101,20 +101,24 @@ export class ProjectService {
 
   async updateProject(
     projectId: string,
-    data: CreateProjectDto,
+    data: UpdateProjectDto,
     userId: string,
   ) {
+    const updateData: any = {};
+
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.description !== undefined)
+      updateData.description = data.description;
+    if (data.statut !== undefined) updateData.statut = data.statut;
+    if (data.image !== undefined) updateData.image = data.image;
+
     const updatedProject = await this.prisma.project.update({
       where: {
         id: projectId,
         ownerId: userId,
         isDeleted: false,
       },
-      data: {
-        title: data.title,
-        description: data.description,
-        statut: data.statut,
-      },
+      data: updateData,
     });
 
     // Send notification

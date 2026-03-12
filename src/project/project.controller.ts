@@ -9,7 +9,7 @@ import {
   Param,
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
-import { CreateProjectDto } from './dto/create-project.dto';
+import { CreateProjectDto, UpdateProjectDto } from './dto/create-project.dto';
 import { BetterAuthGuard } from '../common/guards/better-auth.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -80,7 +80,7 @@ export class ProjectController {
   @Roles('PROJECT_OWNER')
   updateProject(
     @Param('id') id: string,
-    @Body() data: CreateProjectDto,
+    @Body() data: UpdateProjectDto,
     @Req() req,
   ) {
     const projectId = id;

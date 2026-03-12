@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsString, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsArray,
+  ValidateNested,
+  IsOptional,
+} from 'class-validator';
 import { CreateProjectStageDto } from './create-project-stage.dto';
 import { Type } from 'class-transformer';
 
@@ -29,14 +35,18 @@ export type Project_statut = 'DRAFT' | 'ACTIVE' | 'SUSPENDED' | 'COMPLETED';
 
 export class UpdateProjectDto {
   @IsString()
-  @IsNotEmpty()
-  title: string;
+  @IsOptional()
+  title?: string;
 
   @IsString()
-  @IsNotEmpty()
-  description: string;
+  @IsOptional()
+  description?: string;
 
   @IsString()
-  @IsNotEmpty()
-  statut: Project_statut;
+  @IsOptional()
+  image?: string;
+
+  @IsString()
+  @IsOptional()
+  statut?: Project_statut;
 }
