@@ -35,14 +35,20 @@ export class ProjectStageService {
     data: UpdateProjectStageDto,
     projectStageId: string,
   ) {
-    const project = this.prisma.project_stage.update({
+    const updateData: any = {};
+
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.description !== undefined)
+      updateData.description = data.description;
+    if (data.image !== undefined) updateData.image = data.image;
+    if (data.targetAmount !== undefined)
+      updateData.targetAmount = data.targetAmount;
+
+    const project = await this.prisma.project_stage.update({
       where: {
         id: projectStageId,
       },
-      data: {
-        title: data.title,
-        description: data.description,
-      },
+      data: updateData,
     });
 
     return project;

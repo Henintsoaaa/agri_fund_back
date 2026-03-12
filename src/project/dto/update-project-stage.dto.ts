@@ -1,4 +1,10 @@
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class UpdateProjectStageDto {
   @IsOptional()
@@ -12,6 +18,11 @@ export class UpdateProjectStageDto {
   @IsOptional()
   @IsString()
   image?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  targetAmount?: number;
 }
 
 export class DeleteProjectStageDto {
