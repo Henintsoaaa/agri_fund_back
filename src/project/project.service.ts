@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { ProjectStageService } from './project-stage.service';
@@ -165,11 +169,20 @@ export class ProjectService {
     return result;
   }
 
-  async deleteProject(projectId: string) {
+  async deleteProject(projectId: string, userId?: string, userRole?: string) {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
       select: { title: true, ownerId: true },
     });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    // Only allow project owner or admin to delete
+    if (userRole !== 'ADMIN' && project.ownerId !== userId) {
+      throw new ForbiddenException('You can only delete your own projects');
+    }
 
     const result = await this.prisma.project.update({
       where: {

@@ -109,11 +109,15 @@ export class ProjectController {
 
   @Put('delete/:id')
   @UseGuards(BetterAuthGuard, RolesGuard)
-  @Roles('ADMIN')
-  deleteProject(@Param('id') id: string) {
+  @Roles('ADMIN', 'PROJECT_OWNER')
+  deleteProject(@Param('id') id: string, @Req() req: any) {
     const projectId = id;
 
-    return this.projectService.deleteProject(projectId);
+    return this.projectService.deleteProject(
+      projectId,
+      req.user.id,
+      req.user.role,
+    );
   }
 
   @Put('update-stage/:id')
