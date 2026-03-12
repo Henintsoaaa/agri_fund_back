@@ -196,12 +196,31 @@ export class InvestmentService {
         updatedStage &&
         updatedStage.currentAmount >= updatedStage.targetAmount
       ) {
+        // Marquer le stage comme FUNDED
         await tx.project_stage.update({
           where: { id: investment.projectStageId },
           data: {
             statut: 'FUNDED',
           },
         });
+
+        // Ouvrir automatiquement le stage suivant (stageOrder + 1)
+        const nextStage = await tx.project_stage.findFirst({
+          where: {
+            projectId: updatedStage.projectId,
+            stageOrder: updatedStage.stageOrder + 1,
+            isDeleted: false,
+          },
+        });
+
+        if (nextStage && nextStage.statut === 'CLOSED') {
+          await tx.project_stage.update({
+            where: { id: nextStage.id },
+            data: {
+              statut: 'OPEN',
+            },
+          });
+        }
 
         // Notify stage funded
         await this.notificationService.notifyProjectStageFunded(
