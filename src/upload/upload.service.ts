@@ -67,7 +67,7 @@ export class UploadService {
       originalName: file.originalname,
       mimetype: file.mimetype,
       size: file.size,
-      path: `/${destination}/${filename}`,
+      path: `/uploads/${destination}/${filename}`,
     };
   }
 
