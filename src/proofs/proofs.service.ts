@@ -120,7 +120,7 @@ export class ProofsService {
    * Get approved proofs for a specific project stage (visible to all users)
    */
   async getStageProofs(projectStageId: string) {
-    // First, check if stage is funded
+    // First, check if stage exists
     const stage = await this.prisma.project_stage.findUnique({
       where: { id: projectStageId },
     });
@@ -144,6 +144,82 @@ export class ProofsService {
           select: {
             id: true,
             title: true,
+          },
+        },
+      },
+      orderBy: {
+        uploadedAt: 'desc',
+      },
+    });
+  }
+
+  /**
+   * Get all proofs for a specific stage (owner only - includes pending)
+   */
+  async getMyStageProofs(projectStageId: string, userId: string) {
+    // Verify the stage belongs to a project owned by the user
+    const stage = await this.prisma.project_stage.findFirst({
+      where: {
+        id: projectStageId,
+        project: {
+          ownerId: userId,
+          isDeleted: false,
+        },
+        isDeleted: false,
+      },
+    });
+
+    if (!stage) {
+      throw new NotFoundException(
+        'Project stage not found or you are not authorized',
+      );
+    }
+
+    return await this.prisma.proof.findMany({
+      where: {
+        projectStageId,
+      },
+      include: {
+        project: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },
+      orderBy: {
+        uploadedAt: 'desc',
+      },
+    });
+  }
+
+  /**
+   * Get all proofs for a specific stage (admin only - includes all statuses)
+   */
+  async getAdminStageProofs(projectStageId: string) {
+    const stage = await this.prisma.project_stage.findUnique({
+      where: { id: projectStageId },
+    });
+
+    if (!stage) {
+      throw new NotFoundException('Project stage not found');
+    }
+
+    return await this.prisma.proof.findMany({
+      where: {
+        projectStageId,
+      },
+      include: {
+        project: {
+          select: {
+            id: true,
+            title: true,
+            owner: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },

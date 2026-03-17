@@ -87,6 +87,28 @@ export class ProofsController {
   }
 
   /**
+   * GET /proofs/my-stage-proofs/:stageId
+   * Get all proofs for a stage (owner only - includes pending)
+   */
+  @Get('my-stage-proofs/:stageId')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('PROJECT_OWNER')
+  async getMyStageProofs(@Param('stageId') stageId: string, @Req() req: any) {
+    return await this.proofsService.getMyStageProofs(stageId, req.user.id);
+  }
+
+  /**
+   * GET /proofs/admin-stage-proofs/:stageId
+   * Get all proofs for a stage (admin only - includes all statuses)
+   */
+  @Get('admin-stage-proofs/:stageId')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async getAdminStageProofs(@Param('stageId') stageId: string) {
+    return await this.proofsService.getAdminStageProofs(stageId);
+  }
+
+  /**
    * GET /proofs/project/:projectId
    * Get all approved proofs for a project (accessible by all users)
    */
