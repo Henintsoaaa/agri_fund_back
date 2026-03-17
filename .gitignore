@@ -62,3 +62,5 @@ cookies.txt
 *.md
 
 *.example
+
+uploads/
