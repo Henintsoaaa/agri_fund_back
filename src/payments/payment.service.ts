@@ -3,16 +3,19 @@ import {
   BadRequestException,
   NotFoundException,
   InternalServerErrorException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TransactionService } from '../transaction/transaction.service';
 import { InvestmentService } from '../investment/investment.service';
 import Stripe from 'stripe';
 import { TransactionStatus, TransactionType } from '@/generated/prisma/enums';
+import { LoggerService } from '../common/logger/logger.service';
 
 @Injectable()
 export class PaymentService {
   private stripe: Stripe;
+  private readonly logger = new LoggerService('PaymentService');
 
   constructor(
     private readonly prisma: PrismaService,
@@ -22,8 +25,8 @@ export class PaymentService {
     // Initialiser Stripe avec la clé secrète
     const stripeKey = process.env.STRIPE_SECRET_KEY;
     if (!stripeKey) {
-      console.warn(
-        ' STRIPE_SECRET_KEY not configured. Payment features will not work.',
+      this.logger.warn(
+        'STRIPE_SECRET_KEY not configured. Payment features will not work.',
       );
       this.stripe = null as any;
     } else {
@@ -48,6 +51,7 @@ export class PaymentService {
     investmentId: string,
     amount: number,
     provider: 'STRIPE' | 'PAYPAL' | 'BANK_TRANSFER' = 'STRIPE',
+    user?: any,
   ) {
     if (amount <= 0) {
       throw new BadRequestException('Le montant doit être supérieur à 0');
@@ -68,6 +72,13 @@ export class PaymentService {
 
     if (!investment) {
       throw new NotFoundException('Investissement introuvable');
+    }
+
+    // SECURITY: Verify that the user owns this investment (unless admin)
+    if (user && user.role !== 'ADMIN' && investment.userId !== user.id) {
+      throw new ForbiddenException(
+        'Vous ne pouvez pas effectuer de paiement pour cet investissement',
+      );
     }
 
     // Créer la transaction PAYMENT PENDING
@@ -158,23 +169,18 @@ export class PaymentService {
   }
 
   /**
-   * Traitement PayPal (structure de base)
+   * Traitement PayPal (NON IMPLÉMENTÉ)
+   * TODO: Implement PayPal integration with proper API calls
    */
   private async processPayPalPayment(
     transactionId: string,
     amount: number,
     investment: any,
   ) {
-    // TODO: Implémenter l'intégration PayPal
-    // Pour l'instant, retourne une structure de base
-    return {
-      provider: 'PAYPAL',
-      transactionId,
-      amount,
-      status: 'PENDING',
-      approvalUrl: 'https://paypal.com/checkout/...',
-      message: 'PayPal non implémenté - À compléter',
-    };
+    // PayPal integration is not yet implemented
+    throw new BadRequestException(
+      'PayPal payment provider is not yet implemented. Please use STRIPE or BANK_TRANSFER.',
+    );
   }
 
   /**
@@ -258,7 +264,6 @@ export class PaymentService {
         );
 
       default:
-        console.log(`Événement Stripe non géré: ${event.type}`);
         return { received: true, eventType: event.type };
     }
   }
@@ -326,12 +331,14 @@ export class PaymentService {
   }
 
   /**
-   * Traitement webhook PayPal (structure de base)
+   * Traitement webhook PayPal (NON IMPLÉMENTÉ)
+   * TODO: Implement PayPal webhook verification and processing
    */
   private async handlePayPalWebhook(rawBody: Buffer) {
-    // TODO: Implémenter la vérification et le traitement PayPal
-    console.log('PayPal webhook reçu:', rawBody.toString());
-    return { received: true, provider: 'PAYPAL', message: 'À implémenter' };
+    // PayPal webhook handling is not yet implemented
+    throw new BadRequestException(
+      'PayPal webhook handling is not yet implemented.',
+    );
   }
 
   /**
@@ -533,7 +540,7 @@ export class PaymentService {
   /**
    * Retourne l'état actuel du paiement chez le provider.
    */
-  async getProviderStatus(transactionId: string) {
+  async getProviderStatus(transactionId: string, user?: any) {
     const transaction = await this.prisma.transaction.findUnique({
       where: { id: transactionId },
       include: {
@@ -558,6 +565,17 @@ export class PaymentService {
 
     if (!transaction) {
       throw new NotFoundException('Transaction introuvable');
+    }
+
+    // SECURITY: Verify that the user owns this transaction (unless admin)
+    if (
+      user &&
+      user.role !== 'ADMIN' &&
+      transaction.investment.userId !== user.id
+    ) {
+      throw new ForbiddenException(
+        'Vous ne pouvez pas consulter cette transaction',
+      );
     }
 
     if (!transaction.providerTransactionId) {

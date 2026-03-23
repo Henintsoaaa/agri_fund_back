@@ -4,9 +4,12 @@ import type { Request, Response } from 'express';
 import { PaymentService } from './payment.service';
 import { TransactionService } from '../transaction/transaction.service';
 import { InvestmentService } from '../investment/investment.service';
+import { LoggerService } from '../common/logger/logger.service';
 
 @Controller('webhook')
 export class WebhookController {
+  private readonly logger = new LoggerService('WebhookController');
+
   constructor(
     private paymentService: PaymentService,
     private transactionService: TransactionService,
@@ -19,12 +22,12 @@ export class WebhookController {
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
     if (!sig || typeof sig !== 'string') {
-      console.error('Invalid or missing Stripe signature');
+      this.logger.error('Invalid or missing Stripe signature');
       return res.status(400).send('Webhook Error: Invalid signature');
     }
 
     if (!endpointSecret) {
-      console.error('Missing webhook endpoint secret');
+      this.logger.error('Missing webhook endpoint secret');
       return res.status(500).send('Webhook Error: Missing endpoint secret');
     }
 
@@ -37,7 +40,7 @@ export class WebhookController {
         endpointSecret,
       );
     } catch (err) {
-      console.error('Webhook signature verification failed', err);
+      this.logger.error('Webhook signature verification failed', err.message);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
@@ -63,7 +66,8 @@ export class WebhookController {
         break;
 
       default:
-        console.log(`Unhandled event type ${event.type}`);
+        this.logger.warn(`Unhandled event type ${event.type}`);
+        break;
     }
 
     res.json({ received: true });

@@ -79,6 +79,7 @@ export class NotificationService {
     userId: string,
     userName: string,
     createdByAdminName: string,
+    temporaryPassword: string,
   ) {
     const admins = await this.getAdmins();
 
@@ -86,7 +87,7 @@ export class NotificationService {
     await this.notify({
       userId,
       type: 'USER_CREATED',
-      content: `Votre compte a été créé par l'administrateur ${createdByAdminName}. Mot de passe par défaut: 12345678`,
+      content: `Votre compte a été créé par l'administrateur ${createdByAdminName}. Mot de passe temporaire: ${temporaryPassword}. Veuillez le changer dès votre première connexion.`,
     });
 
     // Notify other admins

@@ -85,6 +85,7 @@ model Project_stage{
   description String
   targetAmount Float
   currentAmount Float @default(0)
+  reservedAmount Float @default(0)
   stageOrder Int
   statut      Project_stage_statut
   image       String
@@ -95,7 +96,7 @@ model Project_stage{
   investments Investment[]
   notifications Notification[]
   proofs Proof[]
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade) 
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 model Investment {

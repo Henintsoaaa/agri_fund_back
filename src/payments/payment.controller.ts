@@ -38,12 +38,11 @@ export class PaymentController {
     },
     @Req() req,
   ) {
-    // Note: Vérifier que l'investissement appartient à l'utilisateur
-    // pourrait être ajouté ici
     return await this.paymentService.processPayment(
       body.investmentId,
       body.amount,
       body.provider || 'STRIPE',
+      req.user, // Pass user for authorization check
     );
   }
 
@@ -97,9 +96,10 @@ export class PaymentController {
     @Param('transactionId') transactionId: string,
     @Req() req,
   ) {
-    // Note: Vérifier que la transaction appartient à l'utilisateur
-    // pourrait être ajouté ici
-    return await this.paymentService.getProviderStatus(transactionId);
+    return await this.paymentService.getProviderStatus(
+      transactionId,
+      req.user, // Pass user for authorization check
+    );
   }
 }
 

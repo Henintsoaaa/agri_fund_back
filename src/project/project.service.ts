@@ -250,7 +250,6 @@ export class ProjectService {
         },
       },
     });
-    console.log('public project: ', projects);
 
     return projects;
   }

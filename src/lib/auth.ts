@@ -1,14 +1,12 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
-// If your Prisma file is located elsewhere, you can change the path
-// import { PrismaClient } from '@/generated/prisma/client';
 import { PrismaService } from '@/src/prisma/prisma.service';
 import { send } from 'process';
 import { sendEmail } from './email';
-
-// const prisma = new PrismaClient();
+import { LoggerService } from '@/src/common/logger/logger.service';
 
 const prisma = new PrismaService();
+const logger = new LoggerService('BetterAuth');
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -21,11 +19,11 @@ export const auth = betterAuth({
 
   cookies: {
     sessionToken: {
-      name: 'better-auth.session_token', // NOM CLAIR ET STABLE (underscore pour correspondre au cookie)
+      name: 'better-auth.session_token',
       options: {
         httpOnly: true,
-        sameSite: 'lax', // IMPORTANT
-        secure: false, // true seulement en HTTPS
+        sameSite: 'lax',
+        secure: false, // Set to true when using HTTPS
         path: '/',
       },
     },
@@ -39,11 +37,11 @@ export const auth = betterAuth({
       //   subject: 'Reset your password',
       //   text: `Click the link to reset your password: ${url}`,
       // });
-      console.log(`Click the link to reset your password: ${url}`);
+      logger.log('Password reset requested', { email: user.email });
+      logger.debug('Password reset URL generated', { url });
     },
     onPasswordReset: async ({ user }, request) => {
-      // your logic here
-      console.log(`Password for user ${user.email} has been reset.`);
+      logger.log('Password reset completed', { email: user.email });
     },
   },
 

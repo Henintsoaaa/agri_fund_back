@@ -77,12 +77,4 @@ export class AuthController {
   ) {
     return this.authService.getSession(headers);
   }
-
-  @Get('auth-debug')
-  async debug(@Req() req: any) {
-    return {
-      headers: req.headers,
-      cookies: req.cookies,
-    };
-  }
 }

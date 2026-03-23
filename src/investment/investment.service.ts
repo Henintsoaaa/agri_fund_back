@@ -45,11 +45,23 @@ export class InvestmentService {
         );
       }
 
-      if (stage.currentAmount + amount > stage.targetAmount) {
+      // SECURITY FIX: Check against currentAmount + reservedAmount to prevent overselling
+      const totalAllocated = stage.currentAmount + stage.reservedAmount;
+      if (totalAllocated + amount > stage.targetAmount) {
         throw new BadRequestException(
-          `Le montant dépasse l'objectif. Montant disponible: ${stage.targetAmount - stage.currentAmount}`,
+          `Le montant dépasse l'objectif. Montant disponible: ${stage.targetAmount - totalAllocated}`,
         );
       }
+
+      // SECURITY FIX: Reserve the amount immediately to prevent race conditions
+      await tx.project_stage.update({
+        where: { id: projectStageId },
+        data: {
+          reservedAmount: {
+            increment: amount,
+          },
+        },
+      });
 
       // Créer l'investissement avec status PENDING
       const investment = await tx.investment.create({
@@ -170,11 +182,15 @@ export class InvestmentService {
       });
 
       // Mettre à jour le montant collecté du stage
+      // Transfer from reserved to current amount
       await tx.project_stage.update({
         where: { id: investment.projectStageId },
         data: {
           currentAmount: {
             increment: investment.amount,
+          },
+          reservedAmount: {
+            decrement: investment.amount,
           },
         },
       });
@@ -276,6 +292,18 @@ export class InvestmentService {
           where: { id: investment.projectStageId },
           data: {
             currentAmount: {
+              decrement: investment.amount,
+            },
+          },
+        });
+      }
+
+      // SECURITY FIX: If investment was PENDING, release the reserved amount
+      if (investment.status === 'PENDING') {
+        await tx.project_stage.update({
+          where: { id: investment.projectStageId },
+          data: {
+            reservedAmount: {
               decrement: investment.amount,
             },
           },

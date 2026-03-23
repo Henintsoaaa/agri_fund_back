@@ -5,6 +5,7 @@ import { CreateUserWithDefaultPassDto } from '../auth/dto/create-user.dto';
 import { EditUserDto } from './dto/edit-user.dto';
 import { DeleteUserDto } from './dto/delete-user.dto';
 import { NotificationService } from '../notification/notification.service';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class UserService {
@@ -14,18 +15,35 @@ export class UserService {
     private readonly notificationService: NotificationService,
   ) {}
 
+  /**
+   * Generate a secure random password
+   */
+  private generateRandomPassword(length: number = 16): string {
+    const chars =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    const randomBytesBuffer = randomBytes(length);
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      password += chars[randomBytesBuffer[i] % chars.length];
+    }
+    return password;
+  }
+
   async createUser(
     data: CreateUserWithDefaultPassDto,
     adminName: string = 'Admin',
   ) {
     const { name, email } = data;
 
+    // SECURITY FIX: Generate a random temporary password
+    const temporaryPassword = this.generateRandomPassword();
+
     // Créer l'utilisateur avec better-auth
     const result = await this.auth.api.signUpEmail({
       body: {
         name,
         email,
-        password: '12345678', // Mot de passe par défaut
+        password: temporaryPassword,
       },
     });
 
@@ -38,11 +56,12 @@ export class UserService {
         },
       });
 
-      // Send notification
+      // Send notification with temporary password
       await this.notificationService.notifyUserCreatedByAdmin(
         result.user.id,
         name,
         adminName,
+        temporaryPassword, // Pass the generated password
       );
     }
 

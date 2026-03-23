@@ -1,36 +1,3 @@
-// import {
-//   CanActivate,
-//   ExecutionContext,
-//   Injectable,
-//   UnauthorizedException,
-// } from '@nestjs/common';
-// import { AuthService as BetterAuthService } from '@thallesp/nestjs-better-auth';
-
-// @Injectable()
-// export class BetterAuthGuard implements CanActivate {
-//   constructor(private readonly auth: BetterAuthService) {}
-
-//   async canActivate(context: ExecutionContext): Promise<boolean> {
-//     const request = context.switchToHttp().getRequest();
-
-//     console.log('HEADERS:', request.headers);
-//     console.log('COOKIES:', request.cookies);
-
-//     const session = await this.auth.api.getSession({
-//       headers: {
-//         cookie: request.headers.cookie,
-//       },
-//     });
-
-//     if (!session?.user) {
-//       throw new UnauthorizedException();
-//     }
-
-//     request.user = session.user;
-//     return true;
-//   }
-// }
-
 import {
   Injectable,
   CanActivate,
@@ -47,16 +14,12 @@ export class BetterAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
 
-    console.log('BetterAuthGuard - Cookie:', request.headers.cookie);
-
     // Récupérer la session
     const session = await auth.api.getSession({
       headers: {
         cookie: request.headers.cookie,
       },
     });
-
-    console.log('BetterAuthGuard - Session:', session);
 
     if (!session?.user) {
       throw new UnauthorizedException('No valid session found');
@@ -66,8 +29,6 @@ export class BetterAuthGuard implements CanActivate {
     const fullUser = await this.prisma.user.findUnique({
       where: { id: session.user.id },
     });
-
-    console.log('BetterAuthGuard - FullUser:', fullUser);
 
     if (!fullUser) {
       throw new UnauthorizedException('User not found');
