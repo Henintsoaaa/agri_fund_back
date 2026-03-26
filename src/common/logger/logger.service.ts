@@ -1,11 +1,18 @@
-import { Injectable, LoggerService as NestLoggerService } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  LoggerService as NestLoggerService,
+  Optional,
+} from '@nestjs/common';
 import * as winston from 'winston';
+
+export const LOGGER_CONTEXT = 'LOGGER_CONTEXT';
 
 @Injectable()
 export class LoggerService implements NestLoggerService {
   private logger: winston.Logger;
 
-  constructor(context?: string) {
+  constructor(@Optional() @Inject(LOGGER_CONTEXT) context?: string) {
     this.logger = winston.createLogger({
       level: process.env.LOG_LEVEL || 'info',
       format: winston.format.combine(
@@ -18,10 +25,14 @@ export class LoggerService implements NestLoggerService {
         new winston.transports.Console({
           format: winston.format.combine(
             winston.format.colorize(),
-            winston.format.printf(({ timestamp, level, message, context, ...meta }) => {
-              const metaStr = Object.keys(meta).length ? JSON.stringify(meta) : '';
-              return `${timestamp} [${context || 'App'}] ${level}: ${message} ${metaStr}`;
-            }),
+            winston.format.printf(
+              ({ timestamp, level, message, context, ...meta }) => {
+                const metaStr = Object.keys(meta).length
+                  ? JSON.stringify(meta)
+                  : '';
+                return `${timestamp} [${context || 'App'}] ${level}: ${message} ${metaStr}`;
+              },
+            ),
           ),
         }),
       ],
