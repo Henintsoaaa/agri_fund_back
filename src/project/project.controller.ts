@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { CreateProjectDto, UpdateProjectDto } from './dto/create-project.dto';
+import { CreateProjectStageDto } from './dto/create-project-stage.dto';
 import { BetterAuthGuard } from '../common/guards/better-auth.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -142,6 +143,16 @@ export class ProjectController {
     const projectStageId = id;
 
     return this.projectStageService.deleteProjectStage(data, projectStageId);
+  }
+
+  @Post('create-stage/:projectId')
+  @UseGuards(BetterAuthGuard, RolesGuard)
+  @Roles('PROJECT_OWNER')
+  createProjectStage(
+    @Param('projectId') projectId: string,
+    @Body() data: CreateProjectStageDto,
+  ) {
+    return this.projectStageService.createOneProjectStage(data, projectId);
   }
 
   @Get('stages/:projectId')

@@ -31,6 +31,41 @@ export class ProjectStageService {
     });
   }
 
+  async createOneProjectStage(
+    stageData: CreateProjectStageDto,
+    projectId: string,
+  ) {
+    // Find the highest stageOrder for this project
+    const lastStage = await this.prisma.project_stage.findFirst({
+      where: {
+        projectId,
+        isDeleted: false,
+      },
+      orderBy: {
+        stageOrder: 'desc',
+      },
+    });
+
+    const nextStageOrder = lastStage ? lastStage.stageOrder + 1 : 1;
+
+    // If this is the first stage, set it to OPEN, otherwise CLOSED
+    const statut =
+      nextStageOrder === 1 ? 'OPEN' : ('CLOSED' as Project_stage_statut);
+
+    return this.prisma.project_stage.create({
+      data: {
+        title: stageData.title,
+        description: stageData.description,
+        stageOrder: nextStageOrder,
+        targetAmount: stageData.targetAmount,
+        image: stageData.image,
+        projectId,
+        statut,
+        currentAmount: 0,
+      },
+    });
+  }
+
   async updateOneProjectStage(
     data: UpdateProjectStageDto,
     projectStageId: string,
